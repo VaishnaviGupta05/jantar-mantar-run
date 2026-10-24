@@ -1,46 +1,30 @@
-export class AudioManager {
-  private ctx: AudioContext | null = null;
-  private enabled = true;
+import type { CharacterDef, LaneIndex } from '../types';
 
-  init(): void {
-    if (!this.ctx) {
-      const AudioCtor = window.AudioContext || (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-      if (!AudioCtor) return;
-      this.ctx = new AudioCtor();
-    }
-  }
+export const GAME_CONFIG = {
+  laneCount: 3,
+  laneWidth: 6,
+  gravity: 26,
+  jumpVelocity: 10,
+  slideDuration: 0.8,
+  baseSpeed: 20,
+  maxSpeed: 42,
+  chasePressureDecay: 0.18,
+  chasePressureGain: 0.12,
+  staminaMax: 100,
+  safeZoneRestore: 35,
+  safeZoneCooldown: 8,
+  worldSegmentLength: 22,
+  spawnInterval: 22,
+};
 
-  setEnabled(value: boolean): void {
-    this.enabled = value;
-  }
+export const LANE_POSITIONS: readonly number[] = [-6, 0, 6];
 
-  playTone(frequency = 220, duration = 0.08, type: OscillatorType = 'square', gainValue = 0.03): void {
-    if (!this.enabled || !this.ctx) return;
+export const CHARACTER_DEFS: CharacterDef[] = [
+  { id: 'vanya', name: 'Vanya', description: 'Agile courier with quick lane adjustments and sharp reaction timing.', color: '#f6c76f', unlocked: true, unlockCost: 0 },
+  { id: 'rayan', name: 'Rayan', description: 'Metro sprinter built for high-speed recovery and relentless pace.', color: '#75dce8', unlocked: false, unlockCost: 180 },
+  { id: 'meher', name: 'Meher', description: 'Balanced athlete who thrives in safe-zone recovery and endurance runs.', color: '#78d9b1', unlocked: false, unlockCost: 260 },
+];
 
-    const osc = this.ctx.createOscillator();
-    const gain = this.ctx.createGain();
-    osc.type = type;
-    osc.frequency.value = frequency;
-    gain.gain.value = gainValue;
-    osc.connect(gain);
-    gain.connect(this.ctx.destination);
-    osc.start();
-    osc.stop(this.ctx.currentTime + duration);
-  }
-
-  playPickup(): void {
-    this.playTone(660, 0.08, 'triangle', 0.05);
-  }
-
-  playJump(): void {
-    this.playTone(420, 0.12, 'sawtooth', 0.04);
-  }
-
-  playImpact(): void {
-    this.playTone(90, 0.16, 'square', 0.05);
-  }
-
-  playSafeZone(): void {
-    this.playTone(880, 0.14, 'triangle', 0.06);
-  }
+export function clampLane(value: number): LaneIndex {
+  return Math.max(0, Math.min(2, value)) as LaneIndex;
 }

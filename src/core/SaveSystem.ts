@@ -1,49 +1,54 @@
-import type { GameMode, SaveData } from '../types';
+import type { SaveData } from '../types';
 
-export class GameStateManager {
-  private mode: GameMode = 'menu';
+const STORAGE_KEY = 'jantar-mantar-save-v1';
 
-  private state = {
-    score: 0,
+const defaultData: SaveData = {
+  version: 1,
+  bestScore: 0,
+  totalDistance: 0,
+  totalCollectibles: 0,
+  currency: 0,
+  unlockedCharacters: ['vanya'],
+  selectedCharacter: 'vanya',
+  settings: {
+    music: 0.7,
+    sfx: 0.8,
+    quality: 'balanced',
+    reducedMotion: false,
+  },
+  missions: {
     distance: 0,
     collectibles: 0,
-    stamina: 100,
-    chasePressure: 0,
-    speed: 20,
-  };
+    jumps: 0,
+    safeZones: 0,
+    score: 0,
+  },
+};
 
-  getMode(): GameMode {
-    return this.mode;
+export class SaveSystem {
+  static load(): SaveData {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return defaultData;
+      const parsed = JSON.parse(raw) as Partial<SaveData>;
+      return {
+        ...defaultData,
+        ...parsed,
+        settings: { ...defaultData.settings, ...(parsed.settings ?? {}) },
+        missions: { ...defaultData.missions, ...(parsed.missions ?? {}) },
+        unlockedCharacters: Array.isArray(parsed.unlockedCharacters) && parsed.unlockedCharacters.length > 0 ? parsed.unlockedCharacters : defaultData.unlockedCharacters,
+        selectedCharacter: typeof parsed.selectedCharacter === 'string' ? parsed.selectedCharacter : defaultData.selectedCharacter,
+      };
+    } catch {
+      return defaultData;
+    }
   }
 
-  setMode(mode: GameMode): void {
-    this.mode = mode;
+  static save(data: SaveData): void {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...data, version: 1 }));
   }
 
-  updateFromRun({ score, distance, collectibles, stamina, chasePressure, speed }: Partial<typeof this.state>): void {
-    this.state = { ...this.state, ...{ score: score ?? this.state.score, distance: distance ?? this.state.distance, collectibles: collectibles ?? this.state.collectibles, stamina: stamina ?? this.state.stamina, chasePressure: chasePressure ?? this.state.chasePressure, speed: speed ?? this.state.speed } };
-  }
-
-  getSnapshot(): typeof this.state {
-    return { ...this.state };
-  }
-
-  resetRun(): void {
-    this.state = {
-      score: 0,
-      distance: 0,
-      collectibles: 0,
-      stamina: 100,
-      chasePressure: 0,
-      speed: 20,
-    };
-  }
-
-  hydrateSave(save: SaveData): void {
-    this.state.score = 0;
-    this.state.collectibles = 0;
-    this.state.distance = 0;
-    this.state.stamina = 100;
-    this.state.chasePressure = 0;
+  static reset(): void {
+    localStorage.removeItem(STORAGE_KEY);
   }
 }

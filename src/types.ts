@@ -1,24 +1,54 @@
-{
-  "version": 1,
-  "gameTitle": "Jantar Mantar Run",
-  "style": "Contemporary Indian Arcade",
-  "palette": {
-    "indigo": "#101d31",
-    "charcoal": "#1a1d22",
-    "sandstone": "#d8b48a",
-    "terracotta": "#c96d4f",
-    "saffron": "#f6b85b",
-    "cream": "#f5f1e6",
-    "teal": "#4ac1b5"
-  },
-  "assets": [
-    { "id": "player-silhouette", "kind": "procedural", "description": "Hero runner silhouette with modular body parts." },
-    { "id": "street-segment", "kind": "procedural", "description": "Road and building segment prefab for endless run." },
-    { "id": "obstacle-police-barricade", "kind": "procedural", "description": "Three-lane barricade with collision box." },
-    { "id": "safe-zone-reporter", "kind": "procedural", "description": "Checkpoint camera crew and reporter zone." },
-    { "id": "collectible-marigold", "kind": "procedural", "description": "Token collectible with marigold-inspired palette." },
-    { "id": "powerup-shield", "kind": "procedural", "description": "Bubble shield for temporary protection." },
-    { "id": "audio-fallback", "kind": "synthesized", "description": "Procedural tones used when no external audio assets are installed." }
-  ],
-  "notes": "This project intentionally uses procedural geometry and synth-generated audio as a portable fallback when premium external production assets are unavailable."
+export type LaneIndex = 0 | 1 | 2;
+
+export type GameMode = 'menu' | 'character' | 'running' | 'paused' | 'results';
+
+export interface CharacterDef {
+  id: string;
+  name: string;
+  description: string;
+  color: string;
+  unlocked: boolean;
+  unlockCost: number;
+}
+
+export interface SaveData {
+  version: number;
+  bestScore: number;
+  totalDistance: number;
+  totalCollectibles: number;
+  currency: number;
+  unlockedCharacters: string[];
+  selectedCharacter: string;
+  settings: {
+    music: number;
+    sfx: number;
+    quality: 'low' | 'balanced' | 'high';
+    reducedMotion: boolean;
+  };
+  missions: Record<string, number>;
+}
+
+export interface ObstacleDef {
+  type: 'barricade' | 'barrier' | 'overhead' | 'cone' | 'debris' | 'van';
+  lane: LaneIndex;
+  z: number;
+  height?: number;
+  width?: number;
+  depth?: number;
+}
+
+export interface SpawnPattern {
+  obstacles: ObstacleDef[];
+  safeZones: Array<{ lane: LaneIndex; z: number; active: boolean }>;
+  collectibles: Array<{ lane: LaneIndex; z: number; kind: 'marigold' | 'magnet' | 'shield' | 'multiplier' | 'stamina' }>;
+}
+
+export interface HudSnapshot {
+  score: number;
+  distance: number;
+  collectibles: number;
+  stamina: number;
+  chasePressure: number;
+  powerUp: string;
+  speed: number;
 }

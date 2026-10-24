@@ -1,44 +1,29 @@
-export type LaneIndex = 0 | 1 | 2;
+export type EventName =
+  | 'game:start'
+  | 'game:pause'
+  | 'game:resume'
+  | 'game:restart'
+  | 'game:results'
+  | 'game:over'
+  | 'hud:update'
+  | 'state:change'
+  | 'collectible:pickup'
+  | 'safezone:trigger'
+  | 'audio:toggle';
 
-export type GameMode = 'menu' | 'character' | 'running' | 'paused' | 'results';
+export class EventBus {
+  private emitter = new EventTarget();
 
-export interface CharacterDef {
-  id: string;
-  name: string;
-  description: string;
-  color: string;
-  unlocked: boolean;
-  unlockCost: number;
-}
+  emit<T>(eventName: EventName, detail?: T): void {
+    this.emitter.dispatchEvent(new CustomEvent(eventName, { detail }));
+  }
 
-export interface SaveData {
-  version: number;
-  bestScore: number;
-  totalDistance: number;
-  totalCollectibles: number;
-  currency: number;
-  unlockedCharacters: string[];
-  selectedCharacter: string;
-  settings: {
-    music: number;
-    sfx: number;
-    quality: 'low' | 'balanced' | 'high';
-    reducedMotion: boolean;
-  };
-  missions: Record<string, number>;
-}
+  on<T>(eventName: EventName, callback: (detail: T) => void): () => void {
+    const handler = (event: Event) => {
+      callback((event as CustomEvent<T>).detail as T);
+    };
 
-export interface ObstacleDef {
-  type: 'barricade' | 'barrier' | 'overhead' | 'cone' | 'debris' | 'van';
-  lane: LaneIndex;
-  z: number;
-  height?: number;
-  width?: number;
-  depth?: number;
-}
-
-export interface SpawnPattern {
-  obstacles: ObstacleDef[];
-  safeZones: Array<{ lane: LaneIndex; z: number; active: boolean }>;
-  collectibles: Array<{ lane: LaneIndex; z: number; kind: 'marigold' | 'magnet' | 'shield' | 'multiplier' | 'stamina' }>;
+    this.emitter.addEventListener(eventName, handler);
+    return () => this.emitter.removeEventListener(eventName, handler);
+  }
 }

@@ -1,29 +1,40 @@
-export type EventName =
-  | 'game:start'
-  | 'game:pause'
-  | 'game:resume'
-  | 'game:restart'
-  | 'game:results'
-  | 'game:over'
-  | 'hud:update'
-  | 'state:change'
-  | 'collectible:pickup'
-  | 'safezone:trigger'
-  | 'audio:toggle';
+import type { GameMode } from '../types';
 
-export class EventBus {
-  private emitter = new EventTarget();
+export class GameStateManager {
+  private mode: GameMode = 'menu';
+  private stats = {
+    score: 0,
+    distance: 0,
+    collectibles: 0,
+    stamina: 100,
+    chasePressure: 0,
+    speed: 20,
+  };
 
-  emit<T>(eventName: EventName, detail?: T): void {
-    this.emitter.dispatchEvent(new CustomEvent(eventName, { detail }));
+  getMode(): GameMode {
+    return this.mode;
   }
 
-  on<T>(eventName: EventName, callback: (detail: T) => void): () => void {
-    const handler = (event: Event) => {
-      callback((event as CustomEvent<T>).detail as T);
-    };
+  setMode(mode: GameMode): void {
+    this.mode = mode;
+  }
 
-    this.emitter.addEventListener(eventName, handler);
-    return () => this.emitter.removeEventListener(eventName, handler);
+  updateFromRun(partial: Partial<typeof this.stats>): void {
+    this.stats = { ...this.stats, ...partial };
+  }
+
+  getSnapshot(): typeof this.stats {
+    return { ...this.stats };
+  }
+
+  resetRun(): void {
+    this.stats = {
+      score: 0,
+      distance: 0,
+      collectibles: 0,
+      stamina: 100,
+      chasePressure: 0,
+      speed: 20,
+    };
   }
 }

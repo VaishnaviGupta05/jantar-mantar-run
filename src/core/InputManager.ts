@@ -1,55 +1,49 @@
-import type { SaveData } from '../types';
+export type InputAction = 'left' | 'right' | 'jump' | 'slide' | 'pause';
 
-const STORAGE_KEY = 'jantar-mantar-save-v1';
+export class InputManager {
+  private handlers = new Map<InputAction, Set<() => void>>();
 
-const defaultData: SaveData = {
-  version: 1,
-  bestScore: 0,
-  totalDistance: 0,
-  totalCollectibles: 0,
-  currency: 0,
-  unlockedCharacters: ['vanya'],
-  selectedCharacter: 'vanya',
-  settings: {
-    music: 0.7,
-    sfx: 0.8,
-    quality: 'balanced',
-    reducedMotion: false,
-  },
-  missions: {
-    distance: 0,
-    collectibles: 0,
-    jumps: 0,
-    safeZones: 0,
-    score: 0,
-  },
-};
+  constructor() {
+    window.addEventListener('keydown', (event) => {
+      const key = event.key.toLowerCase();
+      if (event.key === 'ArrowLeft' || key === 'a') this.dispatch('left');
+      if (event.key === 'ArrowRight' || key === 'd') this.dispatch('right');
+      if (event.key === 'ArrowUp' || key === 'w' || event.key === ' ') this.dispatch('jump');
+      if (event.key === 'ArrowDown' || key === 's') this.dispatch('slide');
+      if (event.key === 'Escape' || key === 'p') this.dispatch('pause');
+    });
 
-export class SaveSystem {
-  static load(): SaveData {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return defaultData;
+    let swipeStart: { x: number; y: number } | null = null;
+    window.addEventListener('touchstart', (event) => {
+      const touch = event.touches[0];
+      if (!touch) return;
+      swipeStart = { x: touch.clientX, y: touch.clientY };
+    }, { passive: true });
 
-      const parsed = JSON.parse(raw) as Partial<SaveData>;
-      return {
-        ...defaultData,
-        ...parsed,
-        settings: { ...defaultData.settings, ...(parsed.settings ?? {}) },
-        missions: { ...defaultData.missions, ...(parsed.missions ?? {}) },
-        unlockedCharacters: Array.isArray(parsed.unlockedCharacters) && parsed.unlockedCharacters.length > 0 ? parsed.unlockedCharacters : defaultData.unlockedCharacters,
-        selectedCharacter: typeof parsed.selectedCharacter === 'string' ? parsed.selectedCharacter : defaultData.selectedCharacter,
-      };
-    } catch {
-      return defaultData;
-    }
+    window.addEventListener('touchend', (event) => {
+      if (!swipeStart) return;
+      const touch = event.changedTouches[0];
+      if (!touch) return;
+      const dx = touch.clientX - swipeStart.x;
+      const dy = touch.clientY - swipeStart.y;
+      if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 30) {
+        this.dispatch(dx > 0 ? 'right' : 'left');
+      } else if (Math.abs(dy) > 30) {
+        this.dispatch(dy < 0 ? 'jump' : 'slide');
+      }
+      swipeStart = null;
+    }, { passive: true });
   }
 
-  static save(data: SaveData): void {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...data, version: 1 }));
+  on(action: InputAction, callback: () => void): void {
+    const set = this.handlers.get(action) ?? new Set<() => void>();
+    set.add(callback);
+    this.handlers.set(action, set);
   }
 
-  static reset(): void {
-    localStorage.removeItem(STORAGE_KEY);
+  private dispatch(action: InputAction): void {
+    const callbacks = this.handlers.get(action);
+    if (!callbacks) return;
+    callbacks.forEach((callback) => callback());
   }
 }
