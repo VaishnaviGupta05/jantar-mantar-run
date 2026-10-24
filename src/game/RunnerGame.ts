@@ -129,6 +129,18 @@ export class RunnerGame {
     this.onGameOver = callback;
   }
 
+  getSnapshot(): HudSnapshot {
+    return {
+      score: Math.round(this.score),
+      distance: Math.round(this.distance),
+      collectibles: this.collectiblesCount,
+      stamina: Math.round(this.stamina),
+      chasePressure: Math.round(this.chasePressure),
+      powerUp: this.powerUp,
+      speed: Math.round(this.speed),
+    };
+  }
+
   start(): void {
     const tick = (time: number) => {
       if (this.destroyed) return;
@@ -253,15 +265,7 @@ export class RunnerGame {
     const now = performance.now();
     if (now - this.lastHudSent > 100) {
       this.lastHudSent = now;
-      this.onHudUpdate?.({
-        score: Math.round(this.score),
-        distance: Math.round(this.distance),
-        collectibles: this.collectiblesCount,
-        stamina: Math.round(this.stamina),
-        chasePressure: Math.round(this.chasePressure),
-        powerUp: this.powerUp,
-        speed: Math.round(this.speed),
-      });
+      this.onHudUpdate?.(this.getSnapshot());
     }
   }
 

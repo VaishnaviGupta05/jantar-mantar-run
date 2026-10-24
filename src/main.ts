@@ -1,5 +1,4 @@
 import './styles.css';
-import * as THREE from 'three';
 import { EventBus } from './core/EventBus';
 import { GameStateManager } from './core/GameState';
 import { InputManager } from './core/InputManager';
@@ -7,7 +6,7 @@ import { SaveSystem } from './core/SaveSystem';
 import { AudioManager } from './core/AudioManager';
 import { CHARACTER_DEFS } from './game/config';
 import { RunnerGame } from './game/RunnerGame';
-import type { CharacterDef, HudSnapshot } from './types';
+import type { HudSnapshot } from './types';
 
 const app = document.querySelector('#app');
 if (!app) throw new Error('App root not found.');
@@ -116,7 +115,7 @@ function setScreen(screen: 'menu' | 'character' | 'results'): void {
   if (screen === 'menu') menuScreen?.classList.add('visible');
   if (screen === 'character') characterScreen?.classList.add('visible');
   if (screen === 'results') resultsScreen?.classList.add('visible');
-  hud?.classList.toggle('visible', screen === 'menu' ? false : false);
+  hud?.classList.toggle('visible', screen !== 'menu');
 }
 
 function updateCharacterSelection(): void {
@@ -171,6 +170,15 @@ function startRun(): void {
   currentGame = new RunnerGame(container, characterColor);
   currentGame.bindInput(input);
   currentGame.setOnHudUpdate((snapshot: HudSnapshot) => {
+    state.updateFromRun({
+      score: snapshot.score,
+      distance: snapshot.distance,
+      collectibles: snapshot.collectibles,
+      stamina: snapshot.stamina,
+      chasePressure: snapshot.chasePressure,
+      speed: snapshot.speed,
+    });
+
     document.getElementById('hud-score')!.textContent = String(snapshot.score);
     document.getElementById('hud-distance')!.textContent = `${snapshot.distance}m`;
     document.getElementById('hud-collectibles')!.textContent = String(snapshot.collectibles);
@@ -181,7 +189,7 @@ function startRun(): void {
     document.getElementById('hud-speed')!.textContent = String(snapshot.speed);
   });
   currentGame.setOnGameOver(() => {
-    const snapshot = state.getSnapshot();
+    const snapshot = currentGame?.getSnapshot() ?? state.getSnapshot();
     document.getElementById('result-score')!.textContent = String(Math.round(snapshot.score || 0));
     document.getElementById('result-distance')!.textContent = `${Math.round(snapshot.distance || 0)}m`;
     document.getElementById('result-collectibles')!.textContent = String(snapshot.collectibles || 0);
